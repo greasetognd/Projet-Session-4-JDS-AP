@@ -137,7 +137,7 @@ static int16_t clamp100(int16_t x)		//this whole function forces the value to st
     return x;
 }
 
-static void VehicleControl_ResetAutoState(void)
+static void VehicleControl_ResetAutoState(void)	//resets the memory of the automatic behaviours
 {
     g_vc.line_follow_enabled = false;
     g_vc.obstacle_avoid_enabled = false;
@@ -253,8 +253,22 @@ static void BuildIdleMotorCommand(motor_cmd_t *mcmd)
  */
 static void BuildManualMotorCommand(motor_cmd_t *mcmd)
 {
+	int speed;
+	int turn;
+	int trim;
+
     if (mcmd == NULL)
         return;
+
+    MotorCommand_Clear(mcmd);	//gives a clean slate for the motor values
+
+    /* READ ALL INPUTS */
+    speed = g_vc.last_cmd.speed;
+    turn = g_vc.last_cmd.turn;
+    trim = g_vc.last_cmd.trim;
+
+
+
 
     /*
      * TODO 1 : Mode manuel
