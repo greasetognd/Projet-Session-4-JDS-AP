@@ -43,23 +43,23 @@
 
 typedef struct
 {
-    vehicle_state_t state;
-    control_cmd_t last_cmd;
+    vehicle_state_t state;	//state of vehicle
+    control_cmd_t last_cmd;	//last command the car received from the controller
 
-    line_state_t line_state;
-    int line_error;
-    int line_error_filt;
-    proximity_sensor_data_t prox;
+    line_state_t line_state;	//where the line is
+    int line_error;		//error of line position
+    int line_error_filt;	//filtered error
+    proximity_sensor_data_t prox;	//data from proximity sensors
 
-    bool line_follow_enabled;
-    bool obstacle_avoid_enabled;
+    bool line_follow_enabled;	//if line follow is enabled
+    bool obstacle_avoid_enabled;	//if obstacle avoidance is enabled
 
-    bool line_seen_once;
-    line_state_t last_seen_dir;
-    uint16_t line_lost_ticks;
+    bool line_seen_once;	//if vehicle has seen the line once
+    line_state_t last_seen_dir;	//last known direction of the line
+    uint16_t line_lost_ticks;	//ticks since line was lost
 
-    int line_error_prev;
-    int line_error_integral;
+    int line_error_prev;	//previous line error value
+    int line_error_integral;	//accumulated error over time
 
 } vehicle_control_ctx_t;
 
@@ -130,7 +130,7 @@ static uint8_t VehicleControl_ComputeChecksum(const char *frame);
  * GENERAL HELPERS
  *===========================================================================*/
 
-static int16_t clamp100(int16_t x)
+static int16_t clamp100(int16_t x)		//this whole function forces the value to stay between -100 and 100
 {
     if (x > 100) return 100;
     if (x < -100) return -100;
