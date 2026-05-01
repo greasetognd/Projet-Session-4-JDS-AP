@@ -262,13 +262,35 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd)
 
     MotorCommand_Clear(mcmd);	//gives a clean slate for the motor values
 
+    if (g_vc.last_cmd.stop)
+    {
+    	return;
+    }
+
     /* READ ALL INPUTS */
+
     speed = g_vc.last_cmd.speed;
     turn = g_vc.last_cmd.turn;
     trim = g_vc.last_cmd.trim;
 
+    /* IF NO SPEED AND NO TURN : COAST BECOMES TRUE */
 
+    if (( speed == 0 ) && ( turn == 0))
+		{
+    		mcmd->coast = true;
+    		return;
+		}
+    /* TRIM IF MOVING */
 
+    if ( speed != 0 )
+    	{
+    		turn += trim;
+    	}
+
+    mcmd->left_cmd = clamp100(speed + turn);
+    mcmd->right_cmd = clamp100(speed - turn);
+
+    mcmd->coast = false;
 
     /*
      * TODO 1 : Mode manuel
@@ -287,8 +309,6 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd)
      * - si speed = 0 et turn = 0, mettre coast = true
      * - si STOP est appuyé, arrêter le véhicule
      */
-
-    MotorCommand_Clear(mcmd);
 }
 
 /*
