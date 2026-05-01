@@ -251,7 +251,7 @@ static void BuildIdleMotorCommand(motor_cmd_t *mcmd)
  * speed contrôle l'avance/recul, turn contrôle la rotation,
  * trim corrige l'écart entre le côté gauche et le côté droit.
  */
-static void BuildManualMotorCommand(motor_cmd_t *mcmd)
+static void BuildManualMotorCommand(motor_cmd_t *mcmd) // WORKING DO NOT TOUCH
 {
 	int speed;
 	int turn;
@@ -262,7 +262,7 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd)
 
     MotorCommand_Clear(mcmd);	//gives a clean slate for the motor values
 
-    if (g_vc.last_cmd.stop)
+    if ( g_vc.last_cmd.stop )
     {
     	return;
     }
@@ -287,8 +287,8 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd)
     		turn += trim;
     	}
 
-    mcmd->left_cmd = clamp100(speed + turn);
-    mcmd->right_cmd = clamp100(speed - turn);
+    mcmd->left_cmd = clamp100( speed + turn );
+    mcmd->right_cmd = clamp100( speed - turn );
 
     mcmd->coast = false;
 
