@@ -412,6 +412,52 @@ static void BuildObstacleAvoidMotorCommand(motor_cmd_t *mcmd)
         return;
     }
 
+    bool left_valid  = g_vc.prox.left_valid;
+    bool center_valid = g_vc.prox.center_valid;
+    bool right_valid = g_vc.prox.right_valid;
+
+    uint32_t left_mm  = g_vc.prox.left_mm;
+    uint32_t center_mm = g_vc.prox.center_mm;
+    uint32_t right_mm = g_vc.prox.right_mm;
+
+    /* 1. Aucun capteur valide -> arrêt */
+    if (!left_valid && !center_valid && !right_valid)
+      {
+	MotorCommand_Clear(mcmd);
+	return;
+      }
+
+    /* 2. Obstacle proche au centre -> reculer */
+    if (center_valid && center_mm < OA_CENTER_BACKUP_MM)
+      {
+	mcmd->left_cmd  = -OA_REVERSE_SPEED;
+	mcmd->right_cmd = OA_REVERSE_SPEED;
+	mcmd->coast = false;
+	return;
+      }
+
+    /* 3. Obstacle proche à gauche -> tourner à droite */
+    if (left_valid && left_mm < OA_SIDE_PIVOT_MM)
+      {
+	mcmd->left_cmd  = OA_PIVOT_FAST;
+	mcmd->right_cmd = OA_PIVOT_FAST;
+	mcmd->coast = false;
+	return;
+      }
+
+    /* 4. Obstacle proche à droite -> tourner à gauche */
+    if (right_valid && right_mm < OA_SIDE_PIVOT_MM)
+      {
+	mcmd->left_cmd  = -OA_PIVOT_FAST;
+	mcmd->right_cmd = -OA_PIVOT_FAST;
+	mcmd->coast = false;
+	return;
+      }
+
+    /* 5. Tout est libre -> avancer */
+    mcmd->left_cmd  = OA_FORWARD_SPEED;
+    mcmd->right_cmd = -OA_FORWARD_SPEED;
+    mcmd->coast = false;
     /*
      * TODO 4 : Mode évitement d'obstacle
      *
@@ -445,7 +491,7 @@ static void BuildObstacleAvoidMotorCommand(motor_cmd_t *mcmd)
      * Utiliser les constantes OA_...
      */
 
-    MotorCommand_Clear(mcmd);
+
 }
 
 

@@ -423,12 +423,17 @@ static void Task_MainController(void *argument)
          * - mettre à jour last_auto_ctrl_tick
          */
 
-        /*
-        if (...)
+
+        if (IsAutoControlState())
         {
-            ...
+            if ((xTaskGetTickCount() - last_auto_ctrl_tick) >= pdMS_TO_TICKS(AUTO_CTRL_PERIOD_MS))
+              {
+        	VehicleControl_GetMotorCommand(&mcmd);
+        	PublishMotorCommand(&mcmd);
+        	last_auto_ctrl_tick = xTaskGetTickCount();
+              }
         }
-        */
+
 
         if ((xTaskGetTickCount() - last_rx_tick) > pdMS_TO_TICKS(BT_TIMEOUT_MS))
         {
@@ -639,7 +644,7 @@ static void Task_ProximitySensors(void *argument)
 
     for (;;)
     {
-        /*
+	/*
          * TODO 4 :
          * Lire les deux capteurs Sharp.
          *
@@ -654,6 +659,40 @@ static void Task_ProximitySensors(void *argument)
          * Si la conversion échoue, considérer que l'objet est loin :
          * distance = 500 mm, valid = true.
          */
+
+	if (ReadBothSharpRaw(&raw_left, &raw_right))
+	{
+	    mv_left  = SharpRawToMilliVolts(raw_left);
+	    mv_right = SharpRawToMilliVolts(raw_right);
+
+	    if (SHARP_2Y0A21_MilliVoltsToDistanceMm(mv_left, &prox.left_mm) == SHARP_2Y0A21_OK)
+	      {
+		prox.left_valid = true;
+	      }
+	    else
+	      {
+		prox.left_mm = 500;
+		prox.left_valid = true;
+	      }
+
+	    if (SHARP_2Y0A21_MilliVoltsToDistanceMm(mv_right, &prox.right_mm) == SHARP_2Y0A21_OK)
+	      {
+		prox.right_valid = true;
+	      }
+	    else
+	      {
+		prox.right_mm = 500;
+		prox.right_valid = true;
+	      }
+	}
+	else
+	{
+	    prox.left_mm  = 500;
+	    prox.right_mm = 500;
+
+	    prox.left_valid  = true;
+	    prox.right_valid = true;
+	}
 
         /*
          * TODO 5 :
@@ -670,7 +709,22 @@ static void Task_ProximitySensors(void *argument)
          * Si aucune distance n'est reçue, considérer que rien n'est devant :
          * distance = 600 mm, valid = true.
          */
+	RCWL1601_Trigger(&hrcwl);
 
+	vTaskDelay(pdMS_TO_TICKS(RCWL_WAIT_MS));
+
+	RCWL1601_Process(&hrcwl);
+
+	if (RCWL1601_GetDistanceMm(&hrcwl, &dmm))
+	{
+	    prox.center_mm = dmm;
+	    prox.center_valid = true;
+	}
+	else
+	{
+	    prox.center_mm = 600;
+	    prox.center_valid = true;
+	}
         /*
          * TODO 6 :
          * Publier les données de proximité.
@@ -679,6 +733,8 @@ static void Task_ProximitySensors(void *argument)
          * - VehicleDisplayData_SetProximityData(&prox, mv_left, mv_right)
          * - VehicleControl_SetProximityData(&prox)
          */
+	VehicleDisplayData_SetProximityData(&prox, mv_left, mv_right);
+	VehicleControl_SetProximityData(&prox);
 
         vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(PROX_SENSOR_PERIOD_MS));
     }
