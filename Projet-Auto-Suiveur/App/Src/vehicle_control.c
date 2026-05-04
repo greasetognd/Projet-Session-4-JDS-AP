@@ -256,15 +256,22 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd) // WORKING DO NOT TOUCH
 	int speed;
 	int turn;
 	int trim;
+    int target_left;
+    int target_right;
+
+    static int old_left = 0;
+    static int old_right = 0;
 
     if (mcmd == NULL)
         return;
 
     MotorCommand_Clear(mcmd);	//gives a clean slate for the motor values
 
-    if ( g_vc.last_cmd.stop )
+    if (g_vc.last_cmd.stop)
     {
-    	return;
+        old_left = 0;
+        old_right = 0;
+        return;
     }
 
     /* READ ALL INPUTS */
@@ -278,6 +285,8 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd) // WORKING DO NOT TOUCH
 
     if (( speed == 0 ) && ( turn == 0))
 		{
+        	old_left = 0;
+        	old_right = 0;
     		mcmd->coast = true;
     		return;
 		}
@@ -288,8 +297,25 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd) // WORKING DO NOT TOUCH
     		turn += trim;
     	}
 
-    mcmd->left_cmd = clamp100( speed + turn );
-    mcmd->right_cmd = clamp100( speed - turn );
+    target_left  = clamp100(speed + turn);
+    target_right = clamp100(speed - turn);
+
+    if (target_left - old_left >= 10 || old_left - target_left >= 10)
+            old_left += (target_left - old_left) / 2;
+        else
+            old_left = target_left;
+
+        if (target_right - old_right >= 10 || old_right - target_right >= 10)
+            old_right += (target_right - old_right) / 2;
+        else
+            old_right = target_right;
+
+        /* snap to 0 cleanly */
+        if (target_left == 0) old_left = 0;
+        if (target_right == 0) old_right = 0;
+
+        mcmd->left_cmd  = clamp100(old_left);
+        mcmd->right_cmd = clamp100(old_right);
 
 
     mcmd->coast = false;
