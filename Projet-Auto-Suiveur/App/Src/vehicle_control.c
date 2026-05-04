@@ -251,11 +251,16 @@ static void BuildIdleMotorCommand(motor_cmd_t *mcmd)
  * speed contrôle l'avance/recul, turn contrôle la rotation,
  * trim corrige l'écart entre le côté gauche et le côté droit.
  */
-static void BuildManualMotorCommand(motor_cmd_t *mcmd)
+static void BuildManualMotorCommand(motor_cmd_t *mcmd) // WORKING DO NOT TOUCH
 {
 	int speed;
 	int turn;
 	int trim;
+    int target_left;
+    int target_right;
+
+    static int old_left = 0;
+    static int old_right = 0;
 
     if (mcmd == NULL)
         return;
@@ -264,19 +269,24 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd)
 
     if (g_vc.last_cmd.stop)
     {
-    	return;
+        old_left = 0;
+        old_right = 0;
+        return;
     }
 
     /* READ ALL INPUTS */
 
-    speed = g_vc.last_cmd.speed;
-    turn = g_vc.last_cmd.turn;
+    speed = g_vc.last_cmd.turn;
+    turn = g_vc.last_cmd.speed;
     trim = g_vc.last_cmd.trim;
+
 
     /* IF NO SPEED AND NO TURN : COAST BECOMES TRUE */
 
     if (( speed == 0 ) && ( turn == 0))
 		{
+        	old_left = 0;
+        	old_right = 0;
     		mcmd->coast = true;
     		return;
 		}
@@ -287,8 +297,26 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd)
     		turn += trim;
     	}
 
-    mcmd->left_cmd = clamp100(speed + turn);
-    mcmd->right_cmd = clamp100(speed - turn);
+    target_left  = clamp100(speed + turn);
+    target_right = clamp100(speed - turn);
+
+    if (target_left - old_left >= 10 || old_left - target_left >= 10)
+            old_left += (target_left - old_left) / 2;
+        else
+            old_left = target_left;
+
+        if (target_right - old_right >= 10 || old_right - target_right >= 10)
+            old_right += (target_right - old_right) / 2;
+        else
+            old_right = target_right;
+
+        /* snap to 0 cleanly */
+        if (target_left == 0) old_left = 0;
+        if (target_right == 0) old_right = 0;
+
+        mcmd->left_cmd  = clamp100(old_left);
+        mcmd->right_cmd = clamp100(old_right);
+
 
     mcmd->coast = false;
 
