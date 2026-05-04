@@ -269,9 +269,10 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd) // WORKING DO NOT TOUCH
 
     /* READ ALL INPUTS */
 
-    speed = g_vc.last_cmd.speed;
-    turn = g_vc.last_cmd.turn;
+    speed = g_vc.last_cmd.turn;
+    turn = g_vc.last_cmd.speed;
     trim = g_vc.last_cmd.trim;
+
 
     /* IF NO SPEED AND NO TURN : COAST BECOMES TRUE */
 
@@ -289,6 +290,7 @@ static void BuildManualMotorCommand(motor_cmd_t *mcmd) // WORKING DO NOT TOUCH
 
     mcmd->left_cmd = clamp100( speed + turn );
     mcmd->right_cmd = clamp100( speed - turn );
+
 
     mcmd->coast = false;
 
